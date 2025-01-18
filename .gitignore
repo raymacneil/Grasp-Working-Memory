@@ -1,0 +1,17 @@
+#
+/Analysis/Output/
+/Data/
+/Deprecated/
+/BarTraces/
+/ResultsOutBackup/
+/Analysis/*._*
+/Analysis/*_.*
+sysconf.log
+testing_fprintf.m
+sound_test.m
+rttest.m
+get_digit_accuracy.m
+backup_csv_outs.m
+grasp-wm-task-schedule.xlsx
+MasterParticipantInfo-Motor.xlsx
+MasterParticipantInfo-Digits.xlsx 
