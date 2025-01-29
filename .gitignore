@@ -6,6 +6,7 @@
 /ResultsOutBackup/
 /Analysis/*._*
 /Analysis/*_.*
+/Analysis/*.asv
 sysconf.log
 testing_fprintf.m
 sound_test.m
