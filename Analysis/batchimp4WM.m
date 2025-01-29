@@ -190,10 +190,14 @@ for ii = 1:numel(IDs)
     dirList = dir(char(dirLook));
     dirContents = string({dirList.name})';
     dirContents = dirContents(~cellfun(@(x) startsWith(x, '.'), dirContents));
+    oldData = cellfun(@(x) size(x,1)>0, regexp(dirContents, '\d*',"match"),... 
+        'UniformOutput',false);
+    oldData = vertcat(oldData{:});
     
-    singleTarIdx = contains(dirContents, grasp) & contains(dirContents, 'single');
-    dualTarIdx = contains(dirContents, grasp) & contains(dirContents, 'dual');
-    baselineTarIdx = contains(dirContents, 'baseline');
+    
+    singleTarIdx = contains(dirContents, grasp) & contains(dirContents, 'single') & ~oldData;
+    dualTarIdx = contains(dirContents, grasp) & contains(dirContents, 'dual') & ~oldData;
+    baselineTarIdx = contains(dirContents, 'baseline') & ~oldData;
     TypeTargs = [singleTarIdx,dualTarIdx,baselineTarIdx];
     typeNames = [{'Single'},{'Dual'},{'Baseline'}];
   
