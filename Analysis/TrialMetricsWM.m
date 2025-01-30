@@ -197,7 +197,7 @@ trialCount = 0;
         ft0 = T.ft0(ii);
         fRon = T.fRon(ii);
         fPGA = T.fPGA(ii);
-        fRoff = T.fAdjusted_Roff(ii);
+        fRoff = T.fRoffVTorZMin(ii);
         
         
         try
