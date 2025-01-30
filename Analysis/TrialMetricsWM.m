@@ -71,9 +71,8 @@ trialCount = 0;
         T.VDoff(ii) = VDoff;
         
         
-        % Interpolation of frames for a single marker (its how it is
-        % applied that makes this hold for 'or')
-        interpolation_flag1_ref = find(or(temp.mkr5_intrp,temp.mkr6_intrp));
+        % Interpolation of frames for a single marker 
+        interpolation_flag1_ref = find( ( sum([temp.mkr5_intrp,temp.mkr6_intrp],2) == 1 ) );
         % Interpolation of frames for two markers
         interpolation_flag2_ref = find(and(temp.mkr5_intrp,temp.mkr6_intrp));
         
@@ -162,10 +161,10 @@ trialCount = 0;
         %%%%%%%%% TO FOLLOW UP ON %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         if any(ismember(T.fPGA(ii):T.fRoffVT(ii),interpolation_flag2_ref))
             T.GAClose_Interp_Flag(ii) = 2;
-            T.GAClose_Knot_Size(ii) = sum(ismember(T.fPGA(ii):T.fRoffVT(ii),interpolation_flag2_ref));
-        elseif any(ismember(T.fPGA(ii):T.fRoffVT(ii),interpolation_flag1_ref))
+            T.GAClose_Knot_Size(ii) = sum(ismember(T.fPGA(ii):T.fRoffVTorZMin(ii),interpolation_flag2_ref));
+        elseif any(ismember(T.fPGA(ii):T.fRoffVTorZMin(ii),interpolation_flag1_ref))
             T.GAClose_Interp_Flag(ii) = 1;
-            T.GAClose_Knot_Size(ii) = sum(ismember(T.fPGA(ii):T.fRoffVT(ii),interpolation_flag1_ref));
+            T.GAClose_Knot_Size(ii) = sum(ismember(T.fPGA(ii):T.fRoffVTorZMin(ii),interpolation_flag1_ref));
         else
             T.GAClose_Interp_Flag(ii) = 0;
             T.GAClose_Knot_Size(ii) = 0;
@@ -173,7 +172,7 @@ trialCount = 0;
         
         
         try
-            [T.PeakVelH(ii),T.fPeakVelH(ii)] = max(temp.mkrHXYZ_vel(T.fRonH(ii):T.fAdjusted_Roff(ii)));
+            [T.PeakVelH(ii),T.fPeakVelH(ii)] = max(temp.mkrHXYZ_vel(T.fRonH(ii):T.fRoffVTorZMin(ii)));
             T.fPeakVelH(ii) = T.fPeakVelH(ii) + T.fRonH(ii);
         catch
             warning("Error finding IDX peak velocity metrics: trial should be examined.\n");
@@ -181,14 +180,14 @@ trialCount = 0;
         
         
         try
-            [T.PeakVelI(ii),T.fPeakVelI(ii)] = max(temp.mkrIXYZ_vel(T.fRonI(ii):T.fAdjusted_Roff(ii)));
+            [T.PeakVelI(ii),T.fPeakVelI(ii)] = max(temp.mkrIXYZ_vel(T.fRonI(ii):T.fRoffVTorZMin(ii)));
             T.fPeakVelI(ii) = T.fPeakVelI(ii) + T.fRonI(ii);
         catch
             warning("Error finding IDX peak velocity metrics: trial should be examined.\n");
         end
         
         try
-            [T.PeakVelTh(ii),T.fPeakVelTh(ii)] = max(temp.mkrTXYZ_vel(T.fRonTh(ii):T.fAdjusted_Roff(ii)));
+            [T.PeakVelTh(ii),T.fPeakVelTh(ii)] = max(temp.mkrTXYZ_vel(T.fRonTh(ii):T.fRoffVTorZMin(ii)));
             T.fPeakVelTh(ii) = T.fPeakVelTh(ii) + T.fRonTh(ii);
         catch
             warning("Error finding THB peak velocity metrics: trial should be examined.\n");
