@@ -1,6 +1,6 @@
 function [fileName] = pipeline4WM(selectIDs, saveFigures, Mkrs, Dims)
 % Raymond MacNeil, Vision Lab, 2021-2024
-% LAST UPDATED: June 25, 2024 - Edwin Huras
+% LAST UPDATED: Jan 29, 2025 - Ray MacNeil
 % Version 4 of pipeline/batchimp allows multi-select of participants. The
 % 'grasp' functionality is now obsolete and can be removed. The primary use
 % of pipeline4WM is pipeline4WM(1) for multiselect or pipeline(0) for bulk
