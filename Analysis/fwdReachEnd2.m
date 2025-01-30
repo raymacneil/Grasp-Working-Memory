@@ -1,3 +1,5 @@
+%%%%%%%%%%%%% DEPRECATED AS OF JAN 29, 2025 %%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%% USE fwdReachEndZMin.m INSTEAD %%%%%%%%%%%%%%%%%
 
 function [fFwdOff, markerFlag] = fwdReachEnd2(trial, VTon, VToff, VDon, VDoff)
     VTonDefault = 50;
@@ -18,12 +20,21 @@ function [fFwdOff, markerFlag] = fwdReachEnd2(trial, VTon, VToff, VDon, VDoff)
         VDoff = VDoffDefault;    
     end
 
-    % PGAFrame = PeakGA(trial, VTon, VToff, VDon, VDoff);
+
     PGAFrame = PeakGA2(trial, VTon, VToff, VDon, VDoff);
 
+    
+    
+    %% fFwdOff From Velocity Threshold
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%
+    % FROM INDEX FINGER DATA %
+    %%%%%%%%%%%%%%%%%%%%%%%%%%
     VToffMet = find(trial.mkrIXYZ_vel < VToff);
     grp = cumsum([true; diff(VToffMet) ~= 1]);
     VToffMetWindows = splitapply(@(x) {x}, VToffMet, grp);
+    
+    
     if isempty(VToffMet)
         VDoffFirstWin = VToffMet;
     else
@@ -31,15 +42,21 @@ function [fFwdOff, markerFlag] = fwdReachEnd2(trial, VTon, VToff, VDon, VDoff)
             (cellfun('size', VToffMetWindows, 1) >= VDoff);  
         VDoffFirstWin = find(ValidSearch,1,'first');
     end
+        
     if ~isempty(VDoffFirstWin)
         fFwdOffI = VToffMetWindows{VDoffFirstWin}(1) + 1; % Because it's velocity, add one frame
     else
         fFwdOffI = NaN;
     end
-
+    
+    %%%%%%%%%%%%%%%%%%%
+    % FROM THUMB DATA %
+    %%%%%%%%%%%%%%%%%%%
+    
     VToffMet = find(trial.mkrTXYZ_vel < VToff);
     grp = cumsum([true; diff(VToffMet) ~= 1]);
-    VToffMetWindows = splitapply(@(x) {x}, VToffMet, grp);
+    VToffMetWindows = splitapply(@(x) {x}, VToffMet, grp);   
+    
     if isempty(VToffMet)
         VDoffFirstWin = VToffMet;
     else
@@ -47,12 +64,18 @@ function [fFwdOff, markerFlag] = fwdReachEnd2(trial, VTon, VToff, VDon, VDoff)
             (cellfun('size', VToffMetWindows, 1) >= VDoff);  
         VDoffFirstWin = find(ValidSearch,1,'first');
     end
+    
     if ~isempty(VDoffFirstWin)
         fFwdOffT = VToffMetWindows{VDoffFirstWin}(1) + 1; % Because it's velocity, add one frame
     else
         fFwdOffT = NaN;
     end
-
+    
+    %% fFwdOff From Z-Minimum
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%
+    % FROM INDEX FINGER DATA %
+    %%%%%%%%%%%%%%%%%%%%%%%%%%
     mkrIZmins = find(islocalmin(trial.mkr5Z,'MinProminence',20));
     mkrIZminsValid = mkrIZmins(mkrIZmins >= PGAFrame & trial.mkr5Z(mkrIZmins) < 100);
     if isempty(mkrIZminsValid)
@@ -60,7 +83,10 @@ function [fFwdOff, markerFlag] = fwdReachEnd2(trial, VTon, VToff, VDon, VDoff)
     else
         mkrIZmin = mkrIZminsValid(1);
     end
-
+    
+    %%%%%%%%%%%%%%%%%%%
+    % FROM THUMB DATA %
+    %%%%%%%%%%%%%%%%%%%
     mkrTZmins = find(islocalmin(trial.mkr6Z,'MinProminence',20));
     mkrTZminsValid = mkrTZmins(mkrTZmins >= PGAFrame & trial.mkr6Z(mkrTZmins) < 100);
     if isempty(mkrTZminsValid)
