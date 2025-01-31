@@ -1,12 +1,12 @@
 % Grasping Analysis Pipeline
 % 
 % Developed by:
-% Ray MacNeil, Vision Lab, UBC
-% Edwin Huras, Physics Program, Vision Lab Summer Employee
+% Ray MacNeil, Vision Lab, UBC (2021-2025)
+% Edwin Huras, Physics Program, Vision Lab Summer Employee (2024)
 % 2021-2025
-% LAST UPDATED: December 2024, Ray MacNeil
-function [tfsdat, tparams, expinfo] = batchimp4WM(marks, dims, selectIDs)
-% function [tfsdat, tparams, expinfo] = batchimp(grasp, marks, dims, selectIDs)
+% LAST UPDATED: January 2025, Ray MacNeil
+function [tfsdat, tparams, expinfo] = batchimp4WM(marks, dims, selectIDs, datadir)
+% function [tfsdat, tparams, expinfo] = batchimp4WM(grasp, marks, dims, selectIDs, datadir)
 % 
 % INPUTS:
 % marks <DBL> A vector reprenting any value(s) of 1-6. 
@@ -17,14 +17,21 @@ function [tfsdat, tparams, expinfo] = batchimp4WM(marks, dims, selectIDs)
 % dimensions associated with the markers for data import.
 % selectIDs <BOOL> A boolean that determines whether participant folders
 % should be selected manually or found/imported in bulk
+% datadir <CHR>: One of either 'Digits' or 'Motor'
 %
+
 % OUTPUTS:
 % tfsdat <CELL ARRAY> Contains time-series data of OptoTrak data
 % tparams <STRUCT> Represents the trial summary data, e.g., trial order
 % expinfo <CELL ARRAY> Summarizes some information stored by tparams, such as the
 % number of trials, number of missing trials, number of trials per block, etc.
 
+if nargin < 4
+   datadir = 'C:\Users\Vision Lab\Desktop\Grasp-Working-Memory\Data\';
+end
+
 %% Exception handling for INPUT
+
 if ~exist('selectIDs', 'var') || isempty(selectIDs)
     selectIDs = true;
 end
@@ -47,7 +54,25 @@ else
 end
 % datadir = uigetdir;
 %datadir = '~/Nextcloud/ubc_grasp_wm/Data';
-datadir = 'C:\Users\Vision Lab\Desktop\Grasp-Working-Memory\Data';
+
+DefaultDataDir = 'C:\Users\Vision Lab\Desktop\Grasp-Working-Memory\Data\';
+DemographicsFileName = 'Demographics_grasp_wm.csv';
+demsFilePath = fullfile(DefaultDataDir,DemographicsFileName);
+
+if string(DefaultDataDir) ~= string(datadir)
+   
+   datadir = fullfile(DefaultDataDir, datadir);
+     
+   try
+       copyfile(demsFilePath, datadir)
+   catch 
+       error('Issue copying demographics file.\nCheck that %s is contained in %s',... 
+           DemographicsFileName, DefaultDataDir) 
+   end
+   
+end
+   
+
 
 if ~exist(datadir, 'dir')
     fprintf('The default directory cannot be found!\n');
@@ -74,14 +99,14 @@ dirContents = strip(string(ls(datadir)));
 dirContents = dirContents(~startsWith(dirContents, '.'));
 dirFiles = dirContents(contains(dirContents,'.'));
 
-if ~any(contains(dirFiles, 'Demographics_grasp_wm.csv'))
+if ~any(contains(dirFiles, DemographicsFileName))
     error(sprintf(['Selected directory does not contain the file: graspwm_dems_overview.csv \n',...
         'This file must be located in the specified diectory for batchimpWM.m to run. \n',... 
         'Please ensure that this file is located in the selected directory and ',...
         'try again. \n'])) %#ok<SPERR>
 end
 
-fName = fullfile(datadir, 'Demographics_grasp_wm.csv'); 
+fName = fullfile(datadir, DemographicsFileName); 
 
 
 %% Determine Relevant IDs for Data Import
@@ -210,31 +235,12 @@ for ii = 1:numel(IDs)
             tarIdx = TypeTargs(:,typ);
             skipFlag = false;
             if ~any(tarIdx)
-                try
-                    fileNames = regexp(dirContents, '\w*\.txt', 'match')';
-                    fileNames = cellstr(vertcat(fileNames{:,:}));
-
-                    % Remove bad trials
-                    fileNames = fileNames(contains(fileNames,'bt0'));
-
-                    [out, mkrInfo, outCOLS] = GetOptkTFs(dirLook, fileNames, marks, dims);
-                    
-                    if NG
-                        tfsdatPage = typ;
-                    else
-                        tfsdatPage = typ + 2;
-                    end
-                    tfsdatCol = find(cellfun('isempty',tfsdat(1,:,tfsdatPage)),1);
-                    
-                    tfsdat(2:length(out)+1,tfsdatCol,tfsdatPage) = out;
-                    tfsdat(1,ii,tfsdatPage) = cellstr(fileNames{1}(1:7));
-                    [tparams.(char(IDs(ii))).([grasp, typeNames{typ}]), numBadTrialsValid] = GetExpSummaryData(fileDir);
-                catch
-                    warning('Could not find %s %s data for ID %s \n Skipping to next...',... 
-                        grasp, typeNames{typ}, string(IDs(ii)))
-                    skipFlag = true;
-                end
-
+                
+                
+                warning('Could not find %s %s data for ID %s \n Skipping to next...',...
+                    grasp, typeNames{typ}, string(IDs(ii)))
+                skipFlag = true;
+                
             else
 
                 configFile = regexp(dirContents(tarIdx), '(?<=_)[a-z](?=_)', 'match');
@@ -279,9 +285,7 @@ for ii = 1:numel(IDs)
                 %fileNames = sort(regexp(fileNames(:), '\w*\.txt', 'match'))';
                 
                 % Remove bad trials
-                fileNames = fileNames(contains(fileNames,'bt0'));
-
-                %[out, mkrInfo, outCOLS] = GetOptkTFs(dirData, fileNames, marks, dims);
+                fileNames = fileNames(contains(fileNames,'bt0_tf'));
                 [out, mkrInfo, outCOLS] = GetOptkTFs(dirData, fileNames, marks, dims);
                 
                 % If type is PG, use pages 3/4 of tfsdat
@@ -546,19 +550,6 @@ end
 fileID = fopen(fullfile(fileDir, tsFile), 'r');
 headerNames = strsplit(fgetl(fileID), ',');
 
-% Need to accomodate variations in the results_out.csv file as number of
-% columns as well as column location changed over course of experiment
-% if ~contains(headerNames,'PracticeSkipped')
-%     fSpec = horzcat({'%s'},{'%d'}, {'%s'}, repelem({'%d'},4), repelem({'%f'},6), {'%s'}, {'%f'}, {'%f'}, {'%s'},...
-%      repelem({'%f'},6), {'\r\n'});
-% elseif ~contains(headerNames,'wmNBack')
-%     fSpec = horzcat({'%s'},{'%d'}, {'%s'}, repelem({'%d'},5), repelem({'%f'},6), {'%s'}, {'%f'}, {'%f'}, {'%s'},...
-%      repelem({'%f'},6), {'\r\n'});
-% else
-%     fSpec = horzcat({'%s'},{'%d'}, {'%s'}, repelem({'%d'},6), repelem({'%f'},6), {'%s'}, {'%f'}, {'%f'}, {'%s'},...
-%      repelem({'%f'},6), {'\r\n'});
-% end
-% fSpec = ['%s%d%s', repmat('%d', 1, 6), repmat('%f', 1, 5), '%s', '%f%f%s%s%f%f%f%d%f%d%d\r\n'];
     
 fSpec = horzcat({'%s'},{'%d'}, {'%s'}, repelem({'%d'},6), repelem({'%f'},6), {'%s'},... 
 {'%f','%f','%s','%s','%f','%f','%f','%d','%f','%d','%d'}, {'\r\n'});

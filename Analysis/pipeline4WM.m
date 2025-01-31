@@ -1,4 +1,4 @@
-function [fileName] = pipeline4WM(selectIDs, saveFigures, Mkrs, Dims)
+function [fileName] = pipeline4WM(selectIDs, saveFigures, Mkrs, Dims, datadir)
 % Raymond MacNeil, Vision Lab, 2021-2024
 % LAST UPDATED: Jan 29, 2025 - Ray MacNeil
 % Version 4 of pipeline/batchimp allows multi-select of participants. The
@@ -24,20 +24,22 @@ function [fileName] = pipeline4WM(selectIDs, saveFigures, Mkrs, Dims)
 % number of trials, number of missing trials, number of trials per "block", etc. 
 % Last Updated Jan 30, 2024
 
-
+defaultDataDir = 'C:\Users\Vision Lab\Desktop\Grasp-Working-Memory\Data\';
 
 if nargin < 1
-    selectIDs = true; saveFigures = false; Mkrs = 4:6; Dims = 'xyz'; 
+    selectIDs = true; saveFigures = false; Mkrs = 4:6; Dims = 'xyz'; datadir = defaultDataDir; 
 elseif nargin < 2
-    saveFigures = false; Mkrs = 4:6; Dims = 'xyz';
+    saveFigures = false; Mkrs = 4:6; Dims = 'xyz'; datadir = defaultDataDir; 
 elseif nargin < 3
-     Mkrs = 4:6; Dims = 'xyz';
+    Mkrs = 4:6; Dims = 'xyz'; datadir = defaultDataDir; 
 elseif nargin < 4
-    Dims = 'xyz';
+    Dims = 'xyz'; datadir = defaultDataDir; 
+elseif nargin < 5
+    datadir = defaultDataDir; 
 end
 
 
-[tfsdat, tparams, expinfo] = batchimp4WM(Mkrs, Dims, selectIDs);
+[tfsdat, tparams, expinfo] = batchimp4WM(Mkrs, Dims, selectIDs, datadir);
 expinfo = sortrows(expinfo,{'exp','mode'},{'ascend','descend'});
 
 
