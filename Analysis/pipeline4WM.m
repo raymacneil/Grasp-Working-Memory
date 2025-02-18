@@ -1,21 +1,24 @@
-function [fileName] = pipeline4WM(selectIDs, saveFigures, Mkrs, Dims, datadir)
+function [fileName] = pipeline4WM(selectIDs, saveFigures, Mkrs, Dims, datadir, VToff, VDoff)
 % Raymond MacNeil, Vision Lab, 2021-2024
 % LAST UPDATED: Jan 29, 2025 - Ray MacNeil
-% Version 4 of pipeline/batchimp allows multi-select of participants. The
-% 'grasp' functionality is now obsolete and can be removed. The primary use
-% of pipeline4WM is pipeline4WM(1) for multiselect or pipeline(0) for bulk
+% The primary use of pipeline4WM is pipeline4WM(1) for multiselect or pipeline(0) for bulk
 % select. 
-% Default selectIDs value is true
 
 % INPUTS:
-% grasp <DBL> 1 = 'NaturalGrasp'; 2 = 'Pantomime'; 3 = 'Both'
+% selectIDs <BOOL> Whether to select IDs from GUI -- defaults to TRUE
+% saveFigures <BOOL> Whether to save figures of reacg trajectory and
+% landmarks -- defaults to FALSE
 % marks <DBL> A vector reprenting any value(s) of 1-6. 
 % Determines for which markers (1-6) time-series data will be
 % imported. Markers 1-3: Reference; Marker 4: Index 1 
 % Marker 5: Index 2; Marker 6: Thumb
 % Dims <CHR> Any permutation (of any size) of 'xyz'. Specifies the
 % dimensions associated with the markers for data import. 
-% filt <LOG> true or false indicating whether infilled NaNs are filtered
+% datadir <CHR>: One of either 'Digits' or 'Motor'
+% VToff <INT>; % Velocity threshold for event offset(off)
+% VDoff <INT>; % Duration that VToff must be met to define event offset (off)
+
+% 
 
 % OUTPUTS:
 % tfsdat <CELL ARRAY> Contains time-series data of OptoTrak data
@@ -27,15 +30,19 @@ function [fileName] = pipeline4WM(selectIDs, saveFigures, Mkrs, Dims, datadir)
 defaultDataDir = 'C:\Users\Vision Lab\Desktop\Grasp-Working-Memory\Data\';
 
 if nargin < 1
-    selectIDs = true; saveFigures = false; Mkrs = 4:6; Dims = 'xyz'; datadir = defaultDataDir; 
+    selectIDs = true; saveFigures = false; Mkrs = 4:6; Dims = 'xyz'; datadir = defaultDataDir; VToff = 75; VDoff = 5;
 elseif nargin < 2
-    saveFigures = false; Mkrs = 4:6; Dims = 'xyz'; datadir = defaultDataDir; 
+    saveFigures = false; Mkrs = 4:6; Dims = 'xyz'; datadir = defaultDataDir; VToff = 75; VDoff = 5;
 elseif nargin < 3
-    Mkrs = 4:6; Dims = 'xyz'; datadir = defaultDataDir; 
+    Mkrs = 4:6; Dims = 'xyz'; datadir = defaultDataDir; VToff = 75; VDoff = 5;
 elseif nargin < 4
-    Dims = 'xyz'; datadir = defaultDataDir; 
+    Dims = 'xyz'; datadir = defaultDataDir; VToff = 75; VDoff = 5;
 elseif nargin < 5
-    datadir = defaultDataDir; 
+    datadir = defaultDataDir; VToff = 75; VDoff = 5;
+elseif nargin < 6
+    VToff = 75; VDoff = 5;
+elseif nargin < 7
+    VDoff = 5;    
 end
 
 
@@ -102,7 +109,7 @@ for ii = 1:size(tfsdat, 3) % loop through task type, dim 3
             % bar angle, etc.)
 
             %%%%%%%%%%%%%%%%%%%%%%% TRIAL LEVEL LOOP %%%%%%%%%%%%%%%%%%%%%%%%%
-            for kk = 2:endIdx %
+            for kk = 2:endIdx % starting index = 2 because the first row contans the ID label
 
                 fprintf('Processing %s Grasps for %s: Trial %d of %d \n',...
                     ProgLabels(ii), tfsdat{1,jj,ii}, kk-1, endIdx-1);
@@ -204,13 +211,13 @@ for ii = 1:size(tfsdat, 3) % loop through task type, dim 3
 
 end
 
-% Velocity (mm/s) and duration (# frames) thresholds to be used when calculating metrics
-VTon = 50;
-VToff = 75;
-VDon = 60;
-VDoff= 10;
+% Velocity (mm/s) and duration (# frames) thresholds to be used for defining events and calculating metrics
+VTon = 50; % Velocity threshold for event onset (on)
+VDon = 60; % Duration that VTon must be met to define event onset (on)
+% VToff = 75; % Velocity threshold for event offset(off)
+% VDoff = 10; % Duration that VToff must be met to define event offset (off)
 
-% Find landmarks and co
+% Find landmarks and metrics
 AllMetrics = GetMetricsWM(tfsdat,tparams,SampRate,VTon,VToff,VDon,VDoff);
 
 % SAVE THE FILE
