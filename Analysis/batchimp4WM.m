@@ -111,12 +111,20 @@ fName = fullfile(datadir, DemographicsFileName);
 
 %% Determine Relevant IDs for Data Import
 if selectIDs
+    
     dataFolders = uigetdir2(datadir);
     if isempty(dataFolders)
         fprintf("No folder selected. Exiting...\n")
         return
     end
-
+    
+%     T = readtable("C:\Users\Vision Lab\Desktop\Grasp-Working-Memory\MasterParticipantInfo-Digits.xlsx");
+%     PantoIDsIdx = ismember(T.Grasp, 'Pantomime');
+%     PantoIDs = T.ID(PantoIDsIdx);
+%     dataPath = repelem({'C:\Users\Vision Lab\Desktop\Grasp-Working-Memory\Data\'},length(PantoIDs),1);
+%     PantoIDsPath = strcat(dataPath,PantoIDs);
+%     dataFolders = PantoIDsPath;
+  
     % This regex doesn't work on Mac apparently, so I'm using a different
     % method to pull IDs
     % IDs = cellfun(@(x) regexp(x, '(?<=Data\\)\w*', 'match'),... 
