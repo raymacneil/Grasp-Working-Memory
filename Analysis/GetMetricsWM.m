@@ -22,7 +22,7 @@ function AllMetrics = GetMetricsWM(tfsdat, tparams, SampleRate, VTon, VToff, VDo
 VTonDefault = 50;
 VToffDefault = 75;
 VDonDefault = 60;
-VDoffDefault = 10;
+VDoffDefault = 5;
 
 % Assign default parameters if not given
 if nargin < 3
