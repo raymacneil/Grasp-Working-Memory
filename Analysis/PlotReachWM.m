@@ -29,7 +29,7 @@ function f = PlotReachWM(trial, type, ID, grasp, visible)
     hold on;
 
     Ron = fwdReachStart(trial);
-    Roff = fwdReachEnd2(trial);
+    Roff = fwdReachEndVelocityThreshold(trial);
     PGAFrame = PeakGA2(trial);
     if isnan(Ron) || isnan(Roff)
         fprintf("Error finding reach interval, plotting Grip Aperture.\n");
@@ -65,7 +65,7 @@ function f = PlotReachWM(trial, type, ID, grasp, visible)
         plot(x(Ron:Roff), GAVel(Ron:Roff));
         xline(PGAFrame);
         title("Grip Aperture Velocity | " + str);
-        xlabel("Sample 20Hz");
+        xlabel("Frame (200 Hz)");
         ylabel("GAVel");
     elseif type == 5
         f.Position = [350,300,800,400];
@@ -75,7 +75,7 @@ function f = PlotReachWM(trial, type, ID, grasp, visible)
         % Plot 3D trajectory of IDX/THMB
         nexttile([2,2]);
         hold on;
-
+        
         % Plot full IDX trajectory in blue
         plot3(trial.mkr5X,trial.mkr5Y,trial.mkr5Z,'Color',"#0072BD",'DisplayName', 'Index');
         % Plot reach interval in orange
@@ -88,15 +88,15 @@ function f = PlotReachWM(trial, type, ID, grasp, visible)
         plot3(trial.mkr5X.*mkr5_missing,trial.mkr5Y.*mkr5_missing,trial.mkr5Z.*mkr5_missing,'Color',"#FF00FF",'LineWidth',1,'DisplayName', 'Interpolated');
         
         % Plot full THMB trajectory in blue
-        plot3(trial.mkr4X,trial.mkr4Y,trial.mkr4Z,'Color',"#4DBEEE",'DisplayName', 'Thumb');
+        plot3(trial.mkr6X,trial.mkr6Y,trial.mkr6Z,'Color',"#4DBEEE",'DisplayName', 'Thumb');
         % Plot reach interval in orange
-        plot3(trial.mkr4X(Ron:Roff),trial.mkr4Y(Ron:Roff),trial.mkr4Z(Ron:Roff),'Color',"#D95319", 'HandleVisibility','off');
+        plot3(trial.mkr6X(Ron:Roff),trial.mkr6Y(Ron:Roff),trial.mkr6Z(Ron:Roff),'Color',"#D95319", 'HandleVisibility','off');
         % Plot moment of PGA with red *
-        plot3(trial.mkr4X(PGAFrame),trial.mkr4Y(PGAFrame),trial.mkr4Z(PGAFrame),'*r', 'HandleVisibility','off');
+        plot3(trial.mkr6X(PGAFrame),trial.mkr6Y(PGAFrame),trial.mkr6Z(PGAFrame),'*r', 'HandleVisibility','off');
         % Plot missing data points in magenta
-        mkr4_missing = trial.mkr4_intrp;
-        mkr4_missing(trial.mkr4_intrp == 0) = NaN;
-        plot3(trial.mkr4X.*mkr4_missing,trial.mkr4Y.*mkr4_missing,trial.mkr4Z.*mkr4_missing,'Color',"#FF00FF",'LineWidth',1, 'HandleVisibility','off');
+        mkr6_missing = trial.mkr6_intrp;
+        mkr6_missing(trial.mkr6_intrp == 0) = NaN;
+        plot3(trial.mkr6X.*mkr6_missing,trial.mkr6Y.*mkr6_missing,trial.mkr6Z.*mkr6_missing,'Color',"#FF00FF",'LineWidth',1, 'HandleVisibility','off');
 
         title("IDX/THMB trajectory");
         xlabel("X");
@@ -113,7 +113,7 @@ function f = PlotReachWM(trial, type, ID, grasp, visible)
         any_missing(any_missing == 0) = NaN;
         plot(x'.*any_missing,trial.GAxyz.*any_missing,'Color',"#FF00FF",'LineWidth',1);
         xline(PGAFrame);
-        xlabel("Sample 20Hz");
+        xlabel("Frame (200 Hz)");
         ylabel("Grip Aperture");
         xlim([0,length(trial.GAxyz)]);
         title("GA w/ Reach Interval/PGA");
@@ -185,7 +185,7 @@ function f = PlotReachWM(trial, type, ID, grasp, visible)
         xline(PGAFrame);
         xlim([0,length(trial.mkr5Z)]);
         title("Index, Z component");
-        xlabel("Sample 20Hz");
+        xlabel("Frame (200 Hz)");
         ylabel("Z coordinate");
 
         nexttile([1,2]);
@@ -196,10 +196,11 @@ function f = PlotReachWM(trial, type, ID, grasp, visible)
         xlim([0,length(trial.mkrTXYZ_vel)]);
         title("Thumb Velocity");
         % ylim([0,1500]);
-        xlabel("Sample 20Hz");
+        xlabel("Frame (200 Hz)");
         ylabel("mkrTXYZ Vel");
+
     else
-        fprintf("Type must be member of [1 2 3 4 5].\n");
+        fprintf("Type must be member of [1 2 3 4 5 6 7].\n");
     end
 
 end
