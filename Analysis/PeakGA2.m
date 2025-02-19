@@ -1,77 +1,161 @@
 
-function PGAFrame = PeakGA2(trial, VTon, VToff, VDon, VDoff)
-    
-    VTonDefault = 50;
-    VToffDefault = 75;
-    VDonDefault = 60;
-    VDoffDefault = 10;
-    GAVThresh = 16;
-    FwdOn2PGA_MinDist = 40;
-    
-    % Define default parameters if undefined
-    if nargin < 3
-        VTon = VTonDefault; VToff = VToffDefault; 
-        VDon = VDonDefault; VDoff = VDoffDefault;   
-    elseif nargin < 4
-        VToff = VToffDefault; 
-        VDon = VDonDefault; VDoff = VDoffDefault;  
-    elseif nargin < 5
-        VDon = VDonDefault; VDoff = VDoffDefault; 
-    elseif nargin < 6
-        VDoff = VDoffDefault;    
-    end
+function [PGAFrame, ZMinReachBound] = PeakGA2(trial, VTonFwd, VDonFwd, VToffPGA, VDoffPGA) %#ok<*INUSD>
 
-    fFwdOn = fwdReachStart(trial, VTon, VToff, VDon, VDoff);
-    
-    GAVel = [nan; diff(trial.GAxyz)];
-    GAVTonMet = find(GAVel < 0);
-    GAgrp = cumsum([true; diff(GAVTonMet)~=1]);
-    GAVTonMetWindows = splitapply(@(x) {x}, GAVTonMet, GAgrp);
-    ValidSearch = (cellfun(@min, GAVTonMetWindows) > fFwdOn) &... 
-        (cellfun('size', GAVTonMetWindows, 1) >= GAVThresh);
-    GAVDoffFirstWin = find(ValidSearch,1,'first');
-    GAVDoff = GAVTonMetWindows{GAVDoffFirstWin}(1) + 1; % Because it's velocity, add one frame
-    
-    [~,PGAFrameThresh] = max(trial.GAxyz(fFwdOn:GAVDoff));
-    PGAFrameThresh = PGAFrameThresh + fFwdOn - 1;
 
-    % Alternative attempt to find PGA
-    PGAPeaks = find(islocalmax(trial.GAxyz,'MinSeparation',100,'MinProminence',0.8));
-    PGAPeaksValid = PGAPeaks(PGAPeaks > fFwdOn);
-    if isempty(PGAPeaksValid)
-        PGAFrameAlt = NaN;
-    else
-        PGAFrameAlt = PGAPeaksValid(1);
-    end
+VTonFwdDefault = 50;
+VDonFwdDefault = 60;
+% VTonFwdPGA = 200;
+% VDonFwdPGA = 25;
+VToffPGADefault = 0;
+VDoffPGADefault = 16;
+FwdOnAdjustFrames = 40;
+
+% Define default parameters if undefined
+if nargin < 2
+    VTonFwd = VTonFwdDefault; VDonFwd = VDonFwdDefault;
+    VToffPGA = VToffPGADefault; VDoffPGA = VDoffPGADefault;
+elseif nargin < 3
+    VDonFwd = VDonFwdDefault;
+    VToffPGA = VToffPGADefault; VDoffPGA = VDoffPGADefault;
+elseif nargin < 4
+    VToffPGA = VToffPGADefault; VDoffPGA = VDoffPGADefault;
+elseif nargin < 5
+    VDoffPGA = VDoffPGADefault;
+end
+% Defined the frame of reach onset based on the default or
+% provided velocity (VTon) and velocity duration (VDon) thresholds.
+fFwdOn = fwdReachStart(trial, VTonFwd, VDonFwd);
+fFwdOnPGA = fFwdOn + FwdOnAdjustFrames;
+%     GAVel = [nan; diff(trial.GAxyz)]; % Get the velocity of grip aperture adjustment
+GAxyz = trial.GAxyz;
+% x = 1:length(GAxyz);
+% MkrThumbZ = trial.mkr6Z;
+% MkrIndexVel = trial.mkrIXYZ_vel;
+% MkrThumbVel = trial.mkrTXYZ_vel;
+MkrIndexZ = trial.mkr5Z;
+GAVel = trial.GAxyz_vel; % Get the velocity of grip aperture adjustment
+[GAClosureFirstFrame, GAClosureFirstWin] = GAOpenOffset(GAVel,fFwdOn,VToffPGA,VDoffPGA); %#ok<ASGLU>
 
 
 
-    if (PGAFrameAlt - fFwdOn < FwdOn2PGA_MinDist) && (PGAFrameThresh - fFwdOn < FwdOn2PGA_MinDist)
-        if length(PGAPeaksValid) > 1
-            PGAFrame = PGAPeaksValid(2);
-        else
-            PGAFrame = max(PGAFrameThresh,PGAFrameAlt);
-        end
-    elseif (PGAFrameAlt - fFwdOn < FwdOn2PGA_MinDist) || (PGAFrameThresh - fFwdOn < FwdOn2PGA_MinDist)
-        PGAFrame = max(PGAFrameThresh,PGAFrameAlt);
-    else
-        PGAFrame = min(PGAFrameThresh,PGAFrameAlt);
-    end
-    
-    %% Work in progress...
-    % Check whether PGA found is past presumable end of reach
-    mkrIZMins = find(islocalmin(trial.mkr5Z,'MinProminence',20));
-    mkrIZMinsValid = mkrIZMins(mkrIZMins > fFwdOn + FwdOn2PGA_MinDist & trial.mkr5Z(mkrIZMins) < 100);
-    if ~isempty(mkrIZMinsValid)
-        ReachBound = mkrIZMinsValid(1);
-    else
-        ReachBound = NaN;
-    end
+mkrIZMins = find(islocalmin(MkrIndexZ,'MinProminence',10));
+mkrIZMinsValid = mkrIZMins(mkrIZMins > fFwdOnPGA & MkrIndexZ(mkrIZMins) < 100);
+if ~isempty(mkrIZMinsValid)
+    ZMinReachBound = mkrIZMinsValid(1);
+else
+    ZMinReachBound = NaN;
+end
 
-    if PGAFrame > ReachBound
-        [~,PGAFrame] = max(trial.GAxyz(fFwdOn:ReachBound));
-        PGAFrame = PGAFrame + fFwdOn - 1;
-    end
-    %%
+
+
+
+[~,PGAFrame] = max(GAxyz(fFwdOn:ZMinReachBound));
+PGAFrame = PGAFrame + fFwdOn - 1;
+
+% VToff = 75;
+% VDoff = 1;
+% ZLocalPromThreshold = 10;
+% ZMinThreshold = 100;
+% 
+% fRoffVel = NaN;
+% 
+% 
+% 
+% 
+% 
+% 
+% 
+% InitVToff = true;
+% while isnan(fRoffVel) && (VToff < 100)  
+%     
+%     if ~InitVToff
+%         VToff = VToff + 1;
+%     end
+%     
+%     fRoffVelIDX = fwdReachEndVelocityThreshold(MkrIndexVel, PGAFrame, VToff, VDoff);
+%     fRoffVelTHB = fwdReachEndVelocityThreshold(MkrThumbVel, PGAFrame, VToff, VDoff);
+%     fRoffVel = min(fRoffVelIDX,fRoffVelTHB);
+%     InitVToff = false;
+% 
+% end
+% 
+% fRoffZMinIDX = fwdReachEndZMin(MkrIndexZ, PGAFrame, ZLocalPromThreshold, ZMinThreshold);
+% fRoffZMinTHB = fwdReachEndZMin(MkrThumbZ, PGAFrame, ZLocalPromThreshold, ZMinThreshold);
+% fRoffZMin = min(fRoffZMinIDX,fRoffZMinTHB);
+% 
+% 
+% tiledlayout(2,1)
+% nexttile
+% plot(x,GAxyz);
+% hold on;
+% PaintGAClose = GAxyz;
+% NotGAClose = ~(GAVel < 0);
+% PaintGAClose(NotGAClose) = NaN;
+% plot(x,PaintGAClose,x(GAClosureFirstWin),GAxyz(GAClosureFirstWin))
+% xline(fFwdOn, 'color', 'g');
+% plot(x(fFwdOn),GAxyz(fFwdOn), 'g*');
+% xline(fFwdOn2, 'color', "#EDB120"); % Orange
+% xline(fFwdOnPGA, 'color', "#77AC30", 'LineStyle', '--'); % Green
+% xline(PGAFrame, 'color', "m"); % Cyan
+% plot(x(PGAFrame), GAxyz(PGAFrame), "*c");
+% xline(ZMinReachBound, 'color', 'r');
+% if ~isnan(fRoffVel)
+%     xline(fRoffVel, 'color', 'b', 'LineStyle', '--');
+% else
+%     fprintf('fRoff from velocity threshold could not be computed. \n')
+% end
+% plot(x(fRoffZMin),GAxyz(fRoffZMin), 'b*');
+% plot(x(fRoffZMin),GAxyz(fRoffZMin), 'b*');
+% 
+% 
+% nexttile
+% plot(x,MkrIndexZ,x(mkrIZMinsValid),MkrIndexZ(mkrIZMinsValid),'c*')
+% hold on
+% xline(fFwdOn, 'color', 'g');
+% plot(x(fFwdOn),GAxyz(fFwdOn), 'g*');
+% xline(fFwdOnPGA, 'color', "#77AC30", 'LineStyle', '--'); % Green
+% xline(PGAFrame, 'color', "m"); % Magenta
+% xline(ZMinReachBound, 'color', 'r');
+% xline(VelReachBound, 'color', 'y');
+% if ~isnan(fRoffVel)
+%     xline(fRoffVel, 'color', 'b', 'LineStyle', '--');
+% else
+%     fprintf('fRoff from velocity threshold could not be computed. \n')
+% end
+% plot(x(fRoffZMin),MkrIndexZ(fRoffZMin)+25, 'b*');
+
+
+
+
+% fRoff = min(fRoffVel,fRoffZMin);
+% figTrajectory = Get3DTrajectoryPlot(trial, fFwdOn, fRoff, fRoffVel, fRoffZMin, PGAFrame);
+
+
+% PGAFrame = PGAFrame; %#ok<ASGSL>
+
+
+% if (PGAFrameAlt < fFwdOnPGA) && (PGAFrameThresh < fFwdOnPGA)
+%     fprintf('Frame ALT Method One! \n')
+%     if length(PGAPeaksValid) > 1
+%         PGAFrame = PGAPeaksValid(2);
+%     else
+%         PGAFrame = max(PGAFrameThresh,PGAFrameAlt);
+%     end
+% elseif (PGAFrameAlt < fFwdOnPGA) || (PGAFrameThresh < fFwdOnPGA)
+%     fprintf('Frame ALT Method Two! \n')
+%     PGAFrame = max(PGAFrameThresh,PGAFrameAlt);
+% else
+%     fprintf('Frame ALT Method Three! \n')
+%     PGAFrame = min(PGAFrameThresh,PGAFrameAlt);
+% end
+%     
+% 
+% 
+% if PGAFrame > ReachBound
+%     fprintf('PGA Frame Greater Than Reach Bound! \n')
+%     [~,PGAFrame] = max(trial.GAxyz(fFwdOn:ReachBound));
+%     PGAFrame = PGAFrame + fFwdOn - 1;
+% end
+%%
 end
 

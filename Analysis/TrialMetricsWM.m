@@ -23,7 +23,14 @@ function MetricData = TrialMetricsWM(ParticipantData, SampleRate, VTon, VToff, V
 VTonDefault = 50;
 VToffDefault = 75;
 VDonDefault = 60;
-VDoffDefault = 10;
+VDoffDefault = 5;
+
+VToffPGA = 0;
+VDoffPGA = 16;
+VTonFwdPGA = 100;
+VDonFwdPGA = 25;
+ZLocalPromThreshold = 10; 
+ZMinThreshold = 100;
 
 % Define default parameters if undefined
 if nargin < 3
@@ -38,11 +45,13 @@ elseif nargin < 6
     VDoff = VDoffDefault;
 end
 
+
+
 varNames = ["id","Block","Trial_id","TrialCount_tfsdat",...
     "TimetoRon","TimetoPGA","TimetoPGAFlag","PeakVelH","PeakVelI","PeakVelTh","PeakVelAvg","PeakGAVelOpen","PeakGAVelClose"...
     "LDJ_GAVelOpen","SPARC_GAVelOpen","GAOpen_Interp_Flag", "GAOpen_Knot_Size","LDJ_GAVelOpen2","SPARC_GAVelOpen2", "LDJ_GAVelClose","SPARC_GAVelClose"...
-    "GAClose_Interp_Flag", "GAClose_Knot_Size", "PGA","PGAVel","PGAadj","PGA_Interp_Flag",'GARon','GAAtPvelOpen','GAAtPvelClose','GARoff',"GACloseMag","barAngle","barLength",...
-    "LDJ_Early","SPARC_Early", "ft0","fRonH","fRonTh","fRonI","fRon","fPGA","fRoffH","fRoffTh","fRoffI","fRoffIZMin","fRoffTZMin","fRoffVT","fRoffZMin","fRoffVTorZMin",...
+    "GAClose_Interp_Flag", "GAClose_Knot_Size", "PGA","PGAadj","PGA_Interp_Flag",'GARon','GAAtPvelOpen','GAAtPvelClose','GARoff',"GACloseMag","barAngle","barLength",...
+    "LDJ_Early","SPARC_Early", "ft0","fRonH","fRonT","fRonI","fRon","fPGA", "fPGAZBound", "fRoffH","fRoffT","fRoffI","fRoffIZMin","fRoffTZMin","fRoffVT","RoffVTVel","fRoffZMin","RoffZMinVel","fRoffVTorZMin",...
     "fPeakVelH","fPeakVelI","fPeakVelTh","fPeakVelAvg","fPeakGAVelOpen","fPeakGAVelClose","VTon","VToff","VDon","VDoff"];
 
 varTypes = ["categorical", repelem("single",length(varNames)-1)];
@@ -56,7 +65,7 @@ trialCount = 0;
         temp = ParticipantData{ii+1,1,1};
         flagIdx = false(length(flagNames),1);
         trialCount = trialCount + 1;
-        fprintf("Computing metrics for block %d trial %d\n",temp.block(1),temp.trial(1));
+        fprintf("Computing metrics for participant %s, block %d trial %d\n",ParticipantData{1,1,1}, temp.block(1), temp.trial(1));
         
         % Experiment info
         T.id(ii) = categorical(cellstr(ParticipantData{1,1,1}));
@@ -82,20 +91,19 @@ trialCount = 0;
         
         % PGA info
         try
-            T.fPGA(ii) = PeakGA2(temp, VTon, VToff, VDon, VDoff);
+            [T.fPGA(ii), T.fPGAZBound(ii)] = PeakGA2(temp, VTonFwdPGA, VDonFwdPGA, VToffPGA, VDoffPGA);
+%             T.fPGA(ii) = PeakGA3(temp, VTon, VDon, 1);
         catch
             VDon = 40; % Reset VDon for this trial
-            T.fPGA(ii) = PeakGA2(temp, VTon, VToff, VDon, VDoff);
+            [T.fPGA(ii), T.fPGAZBound(ii)] = PeakGA2(temp, VTonFwdPGA, VDonFwdPGA, VToffPGA, VDoffPGA);
             T.VDon(ii) = VDon;
             
         end
         
         if ~isnan(T.fPGA(ii))
             T.PGA(ii) = temp.GAxyz(T.fPGA(ii));
-            T.PGAVel(ii) = temp.GAxyz_vel(T.fPGA(ii));
         else
             T.PGA(ii) = NaN;
-            T.PGAVel(ii) = NaN;
         end
         
         
@@ -108,28 +116,69 @@ trialCount = 0;
             T.PGA_Interp_Flag(ii) = 0;
         end
         
-        % Index info
-        T.fRonI(ii) = fwdReachStart(temp.mkrIXYZ_vel, VTon, VToff, VDon, VDoff);
-        T.fRoffI(ii) = fwdReachEndVelocityThreshold(temp.mkrIXYZ_vel, T.fPGA(ii),... 
-            VToff, VDoff);
+        % Reach onset frames info
+        T.fRonI(ii) = fwdReachStart(temp.mkrIXYZ_vel, VTon, VDon); % Index
+        T.fRonT(ii) = fwdReachStart(temp.mkrTXYZ_vel, VTon, VDon); % Thumb
+        T.fRonH(ii) = fwdReachStart(temp.mkrHXYZ_vel, VTon, VDon); % Knuckle / Wrist
+        T.fRon(ii) = min(T.fRonI(ii),T.fRonT(ii)); % Defining landmark frame for reach onsetr
+     
         
-        % Thumb info
-        T.fRonTh(ii) = fwdReachStart(temp.mkrTXYZ_vel, VTon, VToff, VDon, VDoff);
-        T.fRoffTh(ii) = fwdReachEndVelocityThreshold(temp.mkrTXYZ_vel, T.fPGA(ii),... 
-            VToff, VDoff);
+        % REACH OFFSET DEFINED BY VELOCITY THRESHOLDS
+            
+        T.fRoffHvt(ii) = fwdReachEndVelocityThreshold(temp.mkrHXYZ_vel, T.fPGA(ii),... 
+            VToff, VDoff);      
+        T.fRoffVT(ii) = NaN;
+        VToffPreLoop = VToff;
+        while isnan(T.fRoffVT(ii)) && VToff <= 100
+            T.VToff(ii) = VToff;
+            T.fRoffIvt(ii) = fwdReachEndVelocityThreshold(temp.mkrIXYZ_vel, T.fPGA(ii),...
+                VToff, VDoff);
+            T.fRoffTvt(ii) = fwdReachEndVelocityThreshold(temp.mkrTXYZ_vel, T.fPGA(ii),... 
+                VToff, VDoff);      
+            [T.fRoffVT(ii), MkrIdx] = min([T.fRoffIvt(ii),T.fRoffTvt(ii)]);
+            VToff = VToff + 1;
+        end
+        VToff = VToffPreLoop;    
+        % Get flag to mark whether landmark is defined by index or thumb   
+        if MkrIdx == 1 && ~isnan(T.fRoffVT(ii))
+            T.RoffVTVel(ii) = temp.mkrIXYZ_vel(T.fRoffVT(ii));
+        elseif MkrIdx == 2 && ~isnan(T.fRoffVT(ii))
+            T.RoffVTVel(ii) = temp.mkrTXYZ_vel(T.fRoffVT(ii));
+        else
+            T.RoffVTVel(ii) = NaN;
+        end
+       
         
-        % Hand info
-        T.fRonH(ii) = fwdReachStart(temp.mkrHXYZ_vel, VTon, VToff, VDon, VDoff);
-        T.fRoffH(ii) = fwdReachEndVelocityThreshold(temp.mkrIXYZ_vel, T.fPGA(ii),... 
-            VToff, VDoff);
+        % REACH OFFSET DEFINED BY ZMIN THRESHOLDS
+
+        T.fRoffIZMin(ii) = fwdReachEndZMin(temp.mkr5Z, T.fPGA(ii), ZLocalPromThreshold, 100);
+        T.fRoffTZMin(ii) = fwdReachEndZMin(temp.mkr6Z, T.fPGA(ii), ZLocalPromThreshold, 100);        
+        [T.fRoffZMin(ii), MkrIdx] = min([T.fRoffIZMin(ii),T.fRoffTZMin(ii)]);
         
-        % Final values
-        T.fRon(ii) = min(T.fRonI(ii),T.fRonTh(ii));
-        T.fRoffIZMin(ii) = fwdReachEndZMin(temp.mkr5Z, T.fPGA(ii), 20, 100);
-        T.fRoffTZMin(ii) = fwdReachEndZMin(temp.mkr6Z, T.fPGA(ii), 20, 100);
-        T.fRoffVT(ii) = min(T.fRoffI(ii),T.fRoffTh(ii));
-        T.fRoffZMin(ii) = min(T.fRoffIZMin(ii),T.fRoffTZMin(ii));
-        T.fRoffVTorZMin(ii) = min([T.fRoffI(ii),T.fRoffTh(ii),T.fRoffIZMin(ii),T.fRoffTZMin(ii)]);
+        if MkrIdx == 1 && ~isnan(T.fRoffZMin(ii))
+            T.RoffZMinVel(ii) = temp.mkrIXYZ_vel(T.fRoffZMin(ii));
+        elseif MkrIdx == 2 && ~isnan(T.fRoffZMin(ii))
+            T.RoffZMinVel(ii) = temp.mkrTXYZ_vel(T.fRoffZMin(ii));
+        else
+            T.RoffZMinVel(ii) = NaN;
+        end
+        
+        % Reach offset defined as which comes first, VT or ZMin
+        T.fRoffVTorZMin(ii) = min([T.fRoffI(ii),T.fRoffT(ii),T.fRoffIZMin(ii),T.fRoffTZMin(ii)]);
+        
+        fRon = T.fRon(ii);
+        fPGA = T.fPGA(ii);
+        fPGAZBound =  T.fPGAZBound(ii);
+        fRoffVT = T.fRoffVT(ii); 
+        fRoffZMin = T.fRoffZMin(ii);
+        
+       
+        t = tiledlayout(2,1);
+        fig = gcf;
+        fig.Position = [1350,450,575,500];
+        t = CheckLandmarksPlot(t, temp, fRon, fPGA, fPGAZBound, fRoffVT, fRoffZMin); 
+     
+        
         
         ft0Criteria = sum(~isnan([temp.mkrHXYZ_vel,temp.mkrIXYZ_vel,temp.mkrTXYZ_vel]),2) > 0;
         T.ft0(ii) = find(ft0Criteria,1,'first');
@@ -187,8 +236,8 @@ trialCount = 0;
         end
         
         try
-            [T.PeakVelTh(ii),T.fPeakVelTh(ii)] = max(temp.mkrTXYZ_vel(T.fRonTh(ii):T.fRoffVTorZMin(ii)));
-            T.fPeakVelTh(ii) = T.fPeakVelTh(ii) + T.fRonTh(ii);
+            [T.PeakVelTh(ii),T.fPeakVelTh(ii)] = max(temp.mkrTXYZ_vel(T.fRonT(ii):T.fRoffVTorZMin(ii)));
+            T.fPeakVelTh(ii) = T.fPeakVelTh(ii) + T.fRonT(ii);
         catch
             warning("Error finding THB peak velocity metrics: trial should be examined.\n");
         end
@@ -205,19 +254,19 @@ trialCount = 0;
                 + temp.mkrHXYZ_vel( fRon:fRoff ) ) );
             T.fPeakVelAvg(ii) = T.fPeakVelAvg(ii) + fRon;
         catch
-            warning("Error finding average peake velocity metrics: trial should be examined.\n");
+            warning("Error finding average peak velocity metrics: trial should be examined.\n");
         end
         
         % Grip Aperture Velocity info
         try
-            [T.PeakGAVelOpen(ii),T.fPeakGAVelOpen(ii)] = max( abs( diff( temp.GAxyz( fRon:fPGA ) ) * SampleRate) );
+            [T.PeakGAVelOpen(ii),T.fPeakGAVelOpen(ii)] = max( abs( temp.GAxyz_vel(fRon:fPGA) ) );
             T.fPeakGAVelOpen(ii) = T.fPeakGAVelOpen(ii) + fRon;
         catch
             warning("Error finding GA Open Velocity metrics, trial should be examined.\n");
         end
         
         try
-            [T.PeakGAVelClose(ii),T.fPeakGAVelClose(ii)] = max( abs( diff( temp.GAxyz( fPGA:fRoff ) ) * SampleRate  ) );
+            [T.PeakGAVelClose(ii),T.fPeakGAVelClose(ii)] = max( abs( temp.GAxyz_vel(fPGA:fRoff) )  );
             T.fPeakGAVelClose(ii) = T.fPeakGAVelClose(ii) + fPGA;
         catch
             warning("Error finding GA Close Velocity metrics, trial should be examined.\n");

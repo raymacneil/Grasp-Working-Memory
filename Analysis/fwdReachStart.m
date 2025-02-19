@@ -27,7 +27,7 @@ function fFwdOn = fwdReachStart(trial, VTon, VDon)
             
         else
 
-            GetFrameOfReachOnset(trial,VTon,VDon)
+            fFwdOn = GetFrameOfReachOnset(trial,VTon,VDon);
         end
     catch
         warning('Failed to find reach onset; returning fFwdOn = 1.\n');

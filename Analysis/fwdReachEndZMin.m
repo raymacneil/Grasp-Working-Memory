@@ -1,7 +1,7 @@
 function fMkrZMin = fwdReachEndZMin(MkrZPositionData, PGAFrame, ZLocalPromThreshold, ZMinThreshold)
 
 if nargin < 3
-    ZLocalPromThreshold = 20;
+    ZLocalPromThreshold = 10;
     ZMinThreshold = 100;
 elseif nargin < 4
     ZMinThreshold = 100;
