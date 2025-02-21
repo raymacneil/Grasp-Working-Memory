@@ -47,9 +47,10 @@ AllMetrics = cell(2,size(tfsdat,2),length(graspNames));
 for typ = 1:size(tfsdat,3)
     if ~isempty(tfsdat{1,1,typ})
         for jj = 1:nnz(~cellfun('isempty', tfsdat(1,:,typ)))
-
-            fprintf("Analyzing %s data for participant %d | ID: %s:\n",...
-                [graspNames{typ} modeNames{typ}], jj, string({tfsdat(1,jj,typ)}));
+            graspTag = graspNames{typ};
+            modeTag = modeNames{typ};
+            fprintf("Analyzing %s %s data for participant %d | ID: %s:\n",...
+                graspTag, modeTag, jj, string({tfsdat(1,jj,typ)}));
             ID = tfsdat(1,jj,typ);
             AllMetrics(1,jj,typ) = ID;
 
@@ -60,8 +61,7 @@ for typ = 1:size(tfsdat,3)
 %             metricsTemp = removevars(TrialMetricsWM(tfsdat(:,jj,typ),VTon,VToff,VDon,VDoff),...
 %                 {'id','Block','Trial_id','barAngle','barLength'});
             %%%%% Cal metrics function %%%%%%
-            metricsTemp = TrialMetricsWM(tfsdat(:,jj,typ),SampleRate, VTon, VToff, VDon, VDoff);
-            
+            metricsTemp = TrialMetricsWM(tfsdat(:,jj,typ),SampleRate, VTon, VToff, VDon, VDoff, graspTag, modeTag);
             %%%%% Remove duplicate variable
             metricsTemp = removevars(metricsTemp,...
                 {'id'});

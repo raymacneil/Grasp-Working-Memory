@@ -1,4 +1,4 @@
-function MetricData = TrialMetricsWM(ParticipantData, SampleRate, VTon, VToff, VDon, VDoff)
+function MetricData = TrialMetricsWM(ParticipantData, SampleRate, VTon, VToff, VDon, VDoff, graspTag, modeTag)
 
 % Updated 10-10-2024, Raymond MacNeil
 % Added flagging variables to identify if landmark frames or windows
@@ -17,7 +17,6 @@ function MetricData = TrialMetricsWM(ParticipantData, SampleRate, VTon, VToff, V
 % Overhauled variable names, and adjusted variable assignment so that data
 % would not be thrown out. Namely, Try-Catch blocks were chunking too much
 % data together.
-
 
 
 VTonDefault = 50;
@@ -45,10 +44,32 @@ elseif nargin < 6
     VDoff = VDoffDefault;
 end
 
+expTag = 'Digits';
 
+if strcmp(graspTag, 'NaturalGrasp')
+    graspFigTag = 'ng';
+else
+    graspFigTag = 'pg';
+end
+
+if strcmp(modeTag, 'Single')
+    modeFigTag = 'single';
+else
+    modeFigTag = 'dual';
+end
+
+idTag = ParticipantData{1,1,1};
+figOutPathBase = ['C:\Users\Vision Lab\Desktop\Grasp-Working-Memory\Analysis\Output\LandmarkPlots\', expTag, '\', idTag];
+
+if ~exist(figOutPathBase, 'dir')
+   mkdir(figOutPathBase)
+end
+
+
+FigNamePrefix = [idTag, '-', graspFigTag, '-', modeFigTag, '-'];
 
 varNames = ["id","Block","Trial_id","TrialCount_tfsdat",...
-    "TimetoRon","TimetoPGA","TimetoPGAFlag","PeakVelH","PeakVelI","PeakVelTh","PeakVelAvg","PeakGAVelOpen","PeakGAVelClose"...
+    "LMarkFigName","TimetoRon","TimetoPGA","TimetoPGAFlag","PeakVelH","PeakVelI","PeakVelTh","PeakVelAvg","PeakGAVelOpen","PeakGAVelClose"...
     "LDJ_GAVelOpen","SPARC_GAVelOpen","GAOpen_Interp_Flag", "GAOpen_Knot_Size","LDJ_GAVelOpen2","SPARC_GAVelOpen2", "LDJ_GAVelClose","SPARC_GAVelClose"...
     "GAClose_Interp_Flag", "GAClose_Knot_Size", "PGA","PGAadj","PGA_Interp_Flag",'GARon','GAAtPvelOpen','GAAtPvelClose','GARoff',"GACloseMag","barAngle","barLength",...
     "LDJ_Early","SPARC_Early", "ft0","fRonH","fRonT","fRonI","fRon","fPGA", "fPGAZBound", "fRoffH","fRoffT","fRoffI","fRoffIZMin","fRoffTZMin","fRoffVT","RoffVTVel","fRoffZMin","RoffZMinVel","fRoffVTorZMin",...
@@ -58,12 +79,12 @@ varTypes = ["categorical", repelem("single",length(varNames)-1)];
 T = table('Size',[(sum(~cellfun('isempty',ParticipantData))-1),length(varNames)],'VariableTypes',varTypes,'VariableNames',varNames);
 T{:,5:end-1} = nan;
 
-flagNames = {'VelError','GAVelError','XYZVelSmoothError','GAVelSmoothError'};
+% flagNames = {'VelError','GAVelError','XYZVelSmoothError','GAVelSmoothError'};
 trialCount = 0;
 
     for ii = 1:(sum(~cellfun('isempty',ParticipantData))-1)
         temp = ParticipantData{ii+1,1,1};
-        flagIdx = false(length(flagNames),1);
+        % flagIdx = false(length(flagNames),1);
         trialCount = trialCount + 1;
         fprintf("Computing metrics for participant %s, block %d trial %d\n",ParticipantData{1,1,1}, temp.block(1), temp.trial(1));
         
@@ -78,6 +99,23 @@ trialCount = 0;
         T.VToff(ii) = VToff;
         T.VDon(ii) = VDon;
         T.VDoff(ii) = VDoff;
+
+        % Get tags for saving the landmark plots
+        bnTag = ['bn', '0', num2str(temp.block(1))];
+        tnTag = num2str(temp.trial(1));
+        if numel(tnTag) < 2
+           tnTag = ['tn0', tnTag];
+        else
+           tnTag = ['tn', tnTag];
+        end
+        rpTag = ['rp0', num2str(temp.RepeatFlag(1))];
+        tcTag = num2str(temp.TrialCount(1));
+        tcTagPads = {'00', '0', ''};
+        tcTag = ['t', tcTagPads{numel(tcTag)}, tcTag]; 
+        figNameSuffix = [bnTag, '-', tnTag, '-', rpTag, '-', tcTag, '.fig'];
+        figName = [FigNamePrefix, figNameSuffix];
+        figOutPath = fullfile(figOutPathBase, figName); 
+        
         
         
         % Interpolation of frames for a single marker 
@@ -125,17 +163,17 @@ trialCount = 0;
         
         % REACH OFFSET DEFINED BY VELOCITY THRESHOLDS
             
-        T.fRoffHvt(ii) = fwdReachEndVelocityThreshold(temp.mkrHXYZ_vel, T.fPGA(ii),... 
+        T.fRoffH(ii) = fwdReachEndVelocityThreshold(temp.mkrHXYZ_vel, T.fPGA(ii),... 
             VToff, VDoff);      
         T.fRoffVT(ii) = NaN;
         VToffPreLoop = VToff;
         while isnan(T.fRoffVT(ii)) && VToff <= 100
             T.VToff(ii) = VToff;
-            T.fRoffIvt(ii) = fwdReachEndVelocityThreshold(temp.mkrIXYZ_vel, T.fPGA(ii),...
+            T.fRoffI(ii) = fwdReachEndVelocityThreshold(temp.mkrIXYZ_vel, T.fPGA(ii),...
                 VToff, VDoff);
-            T.fRoffTvt(ii) = fwdReachEndVelocityThreshold(temp.mkrTXYZ_vel, T.fPGA(ii),... 
+            T.fRoffT(ii) = fwdReachEndVelocityThreshold(temp.mkrTXYZ_vel, T.fPGA(ii),... 
                 VToff, VDoff);      
-            [T.fRoffVT(ii), MkrIdx] = min([T.fRoffIvt(ii),T.fRoffTvt(ii)]);
+            [T.fRoffVT(ii), MkrIdx] = min([T.fRoffI(ii),T.fRoffT(ii)]);
             VToff = VToff + 1;
         end
         VToff = VToffPreLoop;    
@@ -151,8 +189,8 @@ trialCount = 0;
         
         % REACH OFFSET DEFINED BY ZMIN THRESHOLDS
 
-        T.fRoffIZMin(ii) = fwdReachEndZMin(temp.mkr5Z, T.fPGA(ii), ZLocalPromThreshold, 100);
-        T.fRoffTZMin(ii) = fwdReachEndZMin(temp.mkr6Z, T.fPGA(ii), ZLocalPromThreshold, 100);        
+        T.fRoffIZMin(ii) = fwdReachEndZMin(temp.mkr5Z, T.fPGA(ii), ZLocalPromThreshold, ZMinThreshold);
+        T.fRoffTZMin(ii) = fwdReachEndZMin(temp.mkr6Z, T.fPGA(ii), ZLocalPromThreshold, ZMinThreshold);        
         [T.fRoffZMin(ii), MkrIdx] = min([T.fRoffIZMin(ii),T.fRoffTZMin(ii)]);
         
         if MkrIdx == 1 && ~isnan(T.fRoffZMin(ii))
@@ -173,12 +211,12 @@ trialCount = 0;
         fRoffZMin = T.fRoffZMin(ii);
         
        
-        t = tiledlayout(2,1);
+        t = tiledlayout(2,1, 'TileSpacing', 'compact');
         fig = gcf;
-        fig.Position = [1350,450,575,500];
-        t = CheckLandmarksPlot(t, temp, fRon, fPGA, fPGAZBound, fRoffVT, fRoffZMin); 
-     
-        
+        fig.Position = [965,420,955,580];
+        t = CheckLandmarksPlot(t, temp, fRon, fPGA, fPGAZBound, fRoffVT, fRoffZMin); %#ok<NASGU>
+        title(figName)
+        savefig(fig,figOutPath,'compact');
         
         ft0Criteria = sum(~isnan([temp.mkrHXYZ_vel,temp.mkrIXYZ_vel,temp.mkrTXYZ_vel]),2) > 0;
         T.ft0(ii) = find(ft0Criteria,1,'first');
