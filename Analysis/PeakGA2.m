@@ -1,7 +1,7 @@
 
-function [PGAFrame, ZMinReachBound] = PeakGA2(trial, VTonFwd, VDonFwd, VToffPGA, VDoffPGA) %#ok<*INUSD>
+function [PGAFrame, ZMinReachBound] = PeakGA2(trial, VTonFwd, VDonFwd, VToffPGA, VDoffPGA, ZMinPThresh) %#ok<*INUSD>
 
-
+ZMinPromThresholdDefault = 10;
 VTonFwdDefault = 50;
 VDonFwdDefault = 60;
 % VTonFwdPGA = 200;
@@ -14,13 +14,19 @@ FwdOnAdjustFrames = 40;
 if nargin < 2
     VTonFwd = VTonFwdDefault; VDonFwd = VDonFwdDefault;
     VToffPGA = VToffPGADefault; VDoffPGA = VDoffPGADefault;
+    ZMinPThresh = ZMinPromThresholdDefault;
 elseif nargin < 3
     VDonFwd = VDonFwdDefault;
     VToffPGA = VToffPGADefault; VDoffPGA = VDoffPGADefault;
+    ZMinPThresh = ZMinPromThresholdDefault;
 elseif nargin < 4
     VToffPGA = VToffPGADefault; VDoffPGA = VDoffPGADefault;
+    ZMinPThresh = ZMinPromThresholdDefault;
 elseif nargin < 5
     VDoffPGA = VDoffPGADefault;
+    ZMinPThresh = ZMinPromThresholdDefault;
+elseif nargin < 6
+    ZMinPThresh = ZMinPromThresholdDefault;
 end
 % Defined the frame of reach onset based on the default or
 % provided velocity (VTon) and velocity duration (VDon) thresholds.
@@ -38,7 +44,7 @@ GAVel = trial.GAxyz_vel; % Get the velocity of grip aperture adjustment
 
 
 
-mkrIZMins = find(islocalmin(MkrIndexZ,'MinProminence',10));
+mkrIZMins = find(islocalmin(MkrIndexZ,'MinProminence',ZMinPThresh));
 mkrIZMinsValid = mkrIZMins(mkrIZMins > fFwdOnPGA & MkrIndexZ(mkrIZMins) < 100);
 if ~isempty(mkrIZMinsValid)
     ZMinReachBound = mkrIZMinsValid(1);
@@ -48,10 +54,13 @@ end
 
 
 
-
-[~,PGAFrame] = max(GAxyz(fFwdOn:ZMinReachBound));
-PGAFrame = PGAFrame + fFwdOn - 1;
-
+% try
+    [~,PGAFrame] = max(GAxyz(fFwdOn:ZMinReachBound));
+    PGAFrame = PGAFrame + fFwdOn - 1;
+% catch
+%     [~,PGAFrame] = max(GAxyz(fFwdOn:end));
+%     PGAFrame = PGAFrame + fFwdOn - 1;
+% end
 % VToff = 75;
 % VDoff = 1;
 % ZLocalPromThreshold = 10;
