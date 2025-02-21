@@ -41,8 +41,10 @@ plot(x(fFwdOn),GAxyz(fFwdOn), 'g*', 'HandleVisibility', 'off');
 plot(nan, nan, 'g-*', 'DisplayName','Reach Onset')
 xline(fFwdOnPGA, 'color', "#77AC30", 'LineStyle', '--', 'DisplayName',... 
     'Reach Onset + 40'); % Pale Green
-xline(PGAFrame, 'color', "c", 'HandleVisibility', 'off'); % Cyan
-plot(x(PGAFrame), GAxyz(PGAFrame), "*m", 'HandleVisibility', 'off');
+if ~isnan(PGAFrame)
+    xline(PGAFrame, 'color', "c", 'HandleVisibility', 'off'); % Cyan
+    plot(x(PGAFrame), GAxyz(PGAFrame), "*m", 'HandleVisibility', 'off');
+end
 plot(nan, nan, 'c-*', 'MarkerFaceColor', 'm', 'DisplayName','PGA')
 xline(fRoffZMin, 'color', 'r', 'HandleVisibility', 'off');
 
@@ -51,24 +53,26 @@ if ~isnan(fRoffVel)
 else
     fprintf('fRoff from velocity threshold could not be computed. \n')
 end
+
+if ~isnan(fPGAZBound)
 xline(fPGAZBound, 'color', "#EDB120", 'LineStyle', '--', 'DisplayName', 'PGA ZMin Bound');
+end
+
 plot(x(fRoffZMin),GAxyz(fRoffZMin), 'r*', 'HandleVisibility', 'off');
 plot(nan, nan, 'r-*', 'MarkerFaceColor', 'm', 'DisplayName','Reach Off (ZMin)')
-
-hold off;
-lgd = legend;
-lgd.Layout.Tile = 'northeast';
-title(lgd,'Landmarks')
+set(gca, 'FontSize', 11)
 
 
 nexttile(t,2)
-plot(x,MkrIndexZ)
+plot(x,MkrIndexZ);
 hold on
 xline(fFwdOn, 'color', 'g');
 plot(x(fFwdOn),MkrIndexZ(fFwdOn), 'g*');
 xline(fFwdOnPGA, 'color', "#77AC30", 'LineStyle', '--'); % Pale Green
-xline(PGAFrame, 'color', "c"); % Cyan
-plot(x(PGAFrame), MkrIndexZ(PGAFrame), "*m");
+if ~isnan(PGAFrame)
+    xline(PGAFrame, 'color', "c"); % Cyan
+    plot(x(PGAFrame), MkrIndexZ(PGAFrame), "*m");
+end
 
 xline(fRoffZMin, 'color', 'r');
 if ~isnan(fRoffVel)
@@ -76,9 +80,19 @@ if ~isnan(fRoffVel)
 else
     fprintf('fRoff from velocity threshold could not be computed. \n')
 end
+
+if ~isnan(fPGAZBound)
 xline(fPGAZBound, 'color', '#EDB120', 'LineStyle', '--');
+end
 plot(x(fRoffZMin),MkrIndexZ(fRoffZMin), 'r*');
+set(gca, 'FontSize', 11)
 
 
+% Create legend in the third tile
+% nexttile(t,3)
+% axis off  % Hide the axes
+lgd = legend(nexttile(1), 'Location', 'eastoutside', 'Orientation', 'vertical');
+title(lgd, 'Landmarks');
+xlabel(t, 'Frame Number (200 Hz)')
 
 end
