@@ -18,4 +18,7 @@ backup_csv_outs.m
 grasp-wm-task-schedule.xlsx
 MasterParticipantInfo-Motor.xlsx
 MasterParticipantInfo-Digits.xlsx
-MasterParticipantInfo-Digits-Trial-Aanalysis.xlsx 
+MasterParticipantInfo-Digits-Trial-Aanalysis.xlsx
+Analysis/FigViewerTestScript.m
+Analysis/FigureViewer.m
+Analysis/Get3DTrajectoryPlot.m 
