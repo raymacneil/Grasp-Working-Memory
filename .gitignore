@@ -1,4 +1,6 @@
 #
+.DS_Store
+Analysis/.DS_Store
 /Analysis/Output/
 /Data/
 /Deprecated/
@@ -15,4 +17,5 @@ get_digit_accuracy.m
 backup_csv_outs.m
 grasp-wm-task-schedule.xlsx
 MasterParticipantInfo-Motor.xlsx
-MasterParticipantInfo-Digits.xlsx 
+MasterParticipantInfo-Digits.xlsx
+MasterParticipantInfo-Digits-Trial-Aanalysis.xlsx 
