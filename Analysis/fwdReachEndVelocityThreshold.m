@@ -2,7 +2,7 @@ function [fFwdOff] = fwdReachEndVelocityThreshold(MkrVelocityData, PGAFrame, VTo
 
 
 VToffDefault = 75; % Default Velocity Threshold
-VDoffDefault = 5; % Default Duration Velocity Threshold Met
+VDoffDefault = 1; % Default Duration Velocity Threshold Met
 
 % Define default theshold parameters if not provided
 if nargin < 3

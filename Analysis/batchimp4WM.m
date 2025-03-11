@@ -27,7 +27,7 @@ function [tfsdat, tparams, expinfo] = batchimp4WM(marks, dims, selectIDs, datadi
 % number of trials, number of missing trials, number of trials per block, etc.
 
 if nargin < 4
-   datadir = 'C:\Users\Vision Lab\Desktop\Grasp-Working-Memory\Data\';
+   datadir = '~/Nextcloud/Grasp-Working-Memory/Data';;
 end
 
 %% Exception handling for INPUT
@@ -55,7 +55,7 @@ end
 % datadir = uigetdir;
 %datadir = '~/Nextcloud/ubc_grasp_wm/Data';
 
-DefaultDataDir = 'C:\Users\Vision Lab\Desktop\Grasp-Working-Memory\Data\';
+DefaultDataDir = '/Users/ray.macneil/Nextcloud/Grasp-Working-Memory/Data';
 DemographicsFileName = 'Demographics_grasp_wm.csv';
 demsFilePath = fullfile(DefaultDataDir,DemographicsFileName);
 

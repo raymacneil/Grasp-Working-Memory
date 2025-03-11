@@ -40,8 +40,10 @@ GAxyz = trial.GAxyz;
 % MkrThumbVel = trial.mkrTXYZ_vel;
 MkrIndexZ = trial.mkr5Z;
 GAVel = trial.GAxyz_vel; % Get the velocity of grip aperture adjustment
+try
 [GAClosureFirstFrame, GAClosureFirstWin] = GAOpenOffset(GAVel,fFwdOn,VToffPGA,VDoffPGA); %#ok<ASGLU>
-
+catch
+end
 
 
 mkrIZMins = find(islocalmin(MkrIndexZ,'MinProminence',ZMinPThresh));
@@ -54,13 +56,13 @@ end
 
 
 
-% try
+try
     [~,PGAFrame] = max(GAxyz(fFwdOn:ZMinReachBound));
     PGAFrame = PGAFrame + fFwdOn - 1;
-% catch
-%     [~,PGAFrame] = max(GAxyz(fFwdOn:end));
-%     PGAFrame = PGAFrame + fFwdOn - 1;
-% end
+catch
+    [~,PGAFrame] = max(GAxyz(fFwdOn:end));
+    PGAFrame = PGAFrame + fFwdOn - 1;
+end
 % VToff = 75;
 % VDoff = 1;
 % ZLocalPromThreshold = 10;

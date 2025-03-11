@@ -27,7 +27,7 @@ function [fileName] = pipeline4WM(selectIDs, saveFigures, Mkrs, Dims, datadir, V
 % number of trials, number of missing trials, number of trials per "block", etc. 
 % Last Updated Jan 30, 2024
 
-defaultDataDir = 'C:\Users\Vision Lab\Desktop\Grasp-Working-Memory\Data\';
+defaultDataDir = '~/Nextcloud/Grasp-Working-Memory/Data';
 
 if nargin < 1
     selectIDs = true; saveFigures = false; Mkrs = 4:6; Dims = 'xyz'; datadir = defaultDataDir; VToff = 75; VDoff = 5;
@@ -224,7 +224,7 @@ AllMetrics = GetMetricsWM(tfsdat,tparams,SampRate,VTon,VToff,VDon,VDoff);
 dt = char(datetime('now', 'Format','yyyy-MMM-dd-HH:mm'));
 dt = strrep(dt, ':', '');
 fileName = strcat('GraspWM-Data-', dt, '.mat');
-OutPath = "C:\Users\Vision Lab\Desktop\Grasp-Working-Memory\Analysis\Output\";
+OutPath = '~/Nextcloud/Grasp-Working-Memory/Analysis/Output/';
 filePath = strcat(OutPath, fileName);
 save(filePath ,'AllMetrics', 'tparams', 'expinfo', 'tfsdat');
 WriteAllMetrics(AllMetrics, fullfile(OutPath, ['grasp-wm-metrics-', dt, '.csv']));   
