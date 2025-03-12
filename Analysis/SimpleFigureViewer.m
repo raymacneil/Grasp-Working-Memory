@@ -1,32 +1,45 @@
-function SimpleFigureViewer()
+function SimpleFigureViewer(dirTag)
     mainFig = figure('Name', 'Figure Viewer', ...
                      'WindowKeyPressFcn', @keyPress);
-    
-    [fileNames, pathName] = uigetfile({'*.fig'}, 'Select Figures', 'MultiSelect', 'on');
-    if isequal(fileNames, 0)
-        close(mainFig);
-        return;
-    end
-    
-    if ~iscell(fileNames)
-        fileNames = {fileNames};
-    end
-    
-    fileNames = fileNames';
-    cstrsplit = @(x) strsplit(x, '-');
-    fileNamesSplit = cellfun(cstrsplit, fileNames, 'UniformOutput', false);
-    fileNamesSplit = vertcat(fileNamesSplit{:});
-    [~, sortIndex] = sortrows(fileNamesSplit, [3,4,5,7],...
-        [{'descend'},repelem({'ascend'},1,3)]);
-    fileNames = fileNames(sortIndex);
+                 
+if nargin < 1
+   dirTag = "None";
+end
 
+defaultDirs = {'~/Nextcloud/Grasp-Working-Memory/Analysis/Output/LandmarkPlots/';
+               '~/Nextcloud/Grasp-Working-Memory/Analysis/Output/LandmarkPlots/Digits/';
+               '~/Nextcloud/Grasp-Working-Memory/Analysis/Output/LandmarkPlots/Motor/';};
+defaultDirIdx = strcmp(dirTag, ["None"; "Digits"; "Motor"]);
+defaultDir = defaultDirs{defaultDirIdx};
+                
     
-    data.files = fullfile(pathName, fileNames);
-    data.names = fileNames;
-    data.idx = 1;
-    setappdata(mainFig, 'data', data);
-    
-    showFigure(mainFig);
+[fileNames, pathName] = uigetfile({'*.fig'}, 'Select Figures', defaultDir,... 
+    'MultiSelect', 'on');
+
+if isequal(fileNames, 0)
+    close(mainFig);
+    return;
+end
+
+if ~iscell(fileNames)
+    fileNames = {fileNames};
+end
+
+fileNames = fileNames';
+cstrsplit = @(x) strsplit(x, '-');
+fileNamesSplit = cellfun(cstrsplit, fileNames, 'UniformOutput', false);
+fileNamesSplit = vertcat(fileNamesSplit{:});
+[~, sortIndex] = sortrows(fileNamesSplit, [3,4,5,7],...
+    [{'descend'},repelem({'ascend'},1,3)]);
+fileNames = fileNames(sortIndex);
+
+
+data.files = fullfile(pathName, fileNames);
+data.names = fileNames;
+data.idx = 1;
+setappdata(mainFig, 'data', data);
+
+showFigure(mainFig);
     
     function keyPress(src, evt)
         data = getappdata(src, 'data');
@@ -61,4 +74,5 @@ function SimpleFigureViewer()
         fig.Name = sprintf('Figure %d/%d: %s', ...
             data.idx, length(data.files), data.names{data.idx});
     end
+
 end
