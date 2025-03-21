@@ -7,6 +7,10 @@
 /Analysis/*._*
 /Analysis/*_.*
 /Analysis/*.asv
+/Analysis/FigureViewer.m
+/Analysis/Get3DTrajectoryPlot.m
+/Analysis/FigViewerTestScript.m
+MasterParticipantInfo-Digits-Trial-Analysis.xlsx
 sysconf.log
 testing_fprintf.m
 sound_test.m
