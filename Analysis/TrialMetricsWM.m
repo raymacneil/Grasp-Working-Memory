@@ -75,9 +75,9 @@ varNames = ["id","Block","Trial_id","TrialCount_tfsdat",...
     "LDJ_Early","SPARC_Early", "ft0","fRonH","fRonT","fRonI","fRon","fPGA", "fPGAZBound", "fRoffH","fRoffT","fRoffI","fRoffIZMin","fRoffTZMin","fRoffVT","RoffVTVel","fRoffZMin","RoffZMinVel","fRoffVTorZMin",...
     "fPeakVelH","fPeakVelI","fPeakVelTh","fPeakVelAvg","fPeakGAVelOpen","fPeakGAVelClose","VTon","VToff","VDon","VDoff"];
 
-varTypes = ["categorical", repelem("single",length(varNames)-1)];
+varTypes = ["categorical", "single", "single", "single", "string", repelem("single",length(varNames)-5)];
 T = table('Size',[(sum(~cellfun('isempty',ParticipantData))-1),length(varNames)],'VariableTypes',varTypes,'VariableNames',varNames);
-T{:,5:end-1} = nan;
+T{:,6:end-1} = nan;
 
 % flagNames = {'VelError','GAVelError','XYZVelSmoothError','GAVelSmoothError'};
 trialCount = 0;
@@ -99,6 +99,7 @@ trialCount = 0;
         T.VToff(ii) = VToff;
         T.VDon(ii) = VDon;
         T.VDoff(ii) = VDoff;
+        
 
         % Get tags for saving the landmark plots
         bnTag = ['bn', '0', num2str(temp.block(1))];
@@ -115,7 +116,7 @@ trialCount = 0;
         figNameSuffix = [bnTag, '-', tnTag, '-', rpTag, '-', tcTag, '.fig'];
         figName = [FigNamePrefix, figNameSuffix];
         figOutPath = fullfile(figOutPathBase, figName); 
-        
+        T.LMarkFigName(ii) = figName;
         
         
         % Interpolation of frames for a single marker 
@@ -210,13 +211,14 @@ trialCount = 0;
         fRoffVT = T.fRoffVT(ii); 
         fRoffZMin = T.fRoffZMin(ii);
         
-       
-        t = tiledlayout(2,1, 'TileSpacing', 'compact');
-        fig = gcf;
-        fig.Position = [965,420,955,580];
-        t = CheckLandmarksPlot(t, temp, fRon, fPGA, fPGAZBound, fRoffVT, fRoffZMin); %#ok<NASGU>
-        title(figName)
-        savefig(fig,figOutPath,'compact');
+        if ~exist(figOutPath, 'file')
+            t = tiledlayout(2,1, 'TileSpacing', 'compact');
+            fig = gcf;
+            fig.Position = [965,420,955,580];
+            t = CheckLandmarksPlot(t, temp, fRon, fPGA, fPGAZBound, fRoffVT, fRoffZMin); %#ok<NASGU>
+            title(figName)
+            savefig(fig,figOutPath,'compact');
+        end
         
         ft0Criteria = sum(~isnan([temp.mkrHXYZ_vel,temp.mkrIXYZ_vel,temp.mkrTXYZ_vel]),2) > 0;
         T.ft0(ii) = find(ft0Criteria,1,'first');
