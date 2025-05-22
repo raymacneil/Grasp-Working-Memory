@@ -21,6 +21,7 @@ catch
 end
 
 
+
 % N.B. tfsdat and AllMetrics are 3-dimensional data structures called cells
 % Think of spread sheets being stack on each other. The first dimension is
 % the row, the second dimension is the column, and third dimension is the
@@ -39,6 +40,18 @@ end
 % Panel 3: PGs, Single Task
 % Panel 4: PGs, Dual Task
 
+RepeatID = strcmp('d10h22a',tfsdat(1,:,1));
+FixNeeded = sum(RepeatID) > 1;
+
+if FixNeeded
+   DeleteIdx = find(RepeatID,1,'last');
+   tfsdat(:,DeleteIdx,1) = cell(size(tfsdat,1),1);
+   tfsdat(:,DeleteIdx,2) = cell(size(tfsdat,1),1);
+   AllMetrics(:,DeleteIdx,1) = cell(size(AllMetrics,1),1);
+   AllMetrics(:,DeleteIdx,2) = cell(size(AllMetrics,1),1);
+end
+  
+
 rgPanels = [1,2];
 pgPanels = [3,4];
 grspFns = {'RG'; 'PG'};
@@ -49,11 +62,10 @@ nonEmptyColsPG = ~cellfun('isempty', tfsdat(1,:,3));
 [tfs, metrics, fwdEndCoords] = deal(struct(grspFns{1},{{}},grspFns{2},{{}}));
 tfs.RG = tfsdat(:, nonEmptyColsRG, rgPanels);
 tfs.PG = tfsdat(:, nonEmptyColsPG, pgPanels);
-metrics.RG = AllMetrics(:,nonEmptyColsRG, rgPanels); 
-metrics.PG = AllMetrics(:,nonEmptyColsPG, pgPanels); 
+metrics.RG = AllMetrics(:, nonEmptyColsRG, rgPanels); 
+metrics.PG = AllMetrics(:, nonEmptyColsPG, pgPanels); 
 fwdEndCoords.RG = cell(size(metrics.RG,1), size(metrics.RG,2), size(metrics.RG,3));
 fwdEndCoords.PG = cell(size(metrics.PG,1), size(metrics.PG,2), size(metrics.PG,3));
-
 
 %% 1. Preallocate Structure with Tables for Storing the fOffAdjusted Coordinate Data
 
@@ -122,7 +134,11 @@ for ii = 1:numel(grspFns)
             for ll = 1:numTrials
             % Loop through the trials of MetricsIJK, pull out the fOff
             % value, then use that to pull out the position data in tfsIJKL
-                fRoff = metricsIJK{ll, 'fRoffVTorZMin'};
+                try
+                    fRoff = metricsIJK{ll, 'fRoffVTorZMin'};
+                catch
+                    fRoff = metricsIJK{ll, 'fAdjusted_Roff'};
+                end
                 TFsll = IndexMapping(ll);
                 tfsIJKL = tfsIJK{TFsll};
                 GetMkrPosVars = regexp(tfsIJKL.Properties.VariableNames,... 
@@ -145,6 +161,11 @@ end % grasp level loop (RG, PG)
 
 RG = [fwdEndCoords.RG(:,:,1); fwdEndCoords.RG(2,:,2)];
 RG = reshape(RG,[],1);
+RGMetrics = [AllMetrics(:,:,1);AllMetrics(2,:,2)];
+RGMetrics = RGMetrics(:, ~cellfun('isempty', (AllMetrics(1,:,1))));
+RGMetrics = reshape(RGMetrics,[],1)
+
+
 PG = [fwdEndCoords.PG(:,:,1); fwdEndCoords.PG(2,:,2)];
 PG = reshape(PG,[],1);
 RGPG = [RG(~cellfun(@ischar,RG)); PG(~cellfun(@ischar,PG))];
